@@ -10,6 +10,9 @@ public class EnemyHealth : MonoBehaviour
     public int health;
     public int maxHealth = 10;
 
+    [Range(0f, 1f)] public float fleeHealthPercent = 0.3f;
+    public bool IsLowHealth => (float)health / maxHealth <= fleeHealthPercent;
+
     [SerializeField] private AudioClip deathSound;
     [SerializeField] private AudioClip hitSound;
     [SerializeField] private float deathVolume = 5f;

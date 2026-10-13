@@ -29,10 +29,18 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private BoxCollider2D[] forbiddenAreas;
 
     [Header("Procedural Maps")]
-    [SerializeField] private float minSpawnDistanceFromPlayer = 6f;
+    [Tooltip("First map this spawner runs on, so new enemy types join later in the run.")]
+    [SerializeField] private int firstMap = 1;
+    [SerializeField] private float minSpawnDistanceFromPlayer = 5f;
+    [SerializeField] private float maxSpawnDistanceFromPlayer = 8f;
 
     void Start()
     {
+        if (ProceduralMapGenerator.Instance != null && ProceduralMapGenerator.Instance.MapNumber < firstMap)
+        {
+            return;
+        }
+
         StartCoroutine(spawnEnemy());
     }
 
@@ -58,7 +66,7 @@ public class EnemySpawner : MonoBehaviour
             }
 
             Vector2 spawnPos = ProceduralMapGenerator.Instance != null
-                ? ProceduralMapGenerator.Instance.GetRandomSpawnPoint(minSpawnDistanceFromPlayer)
+                ? ProceduralMapGenerator.Instance.GetRandomSpawnPoint(minSpawnDistanceFromPlayer, maxSpawnDistanceFromPlayer)
                 : GetRandomPointInBounds();
             GameObject enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
             EnemyPopulationTracker.Register(enemy);

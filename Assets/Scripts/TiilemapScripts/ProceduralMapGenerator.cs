@@ -114,6 +114,7 @@ public class ProceduralMapGenerator : MonoBehaviour
     private readonly List<PlacedProp> obstacles = new List<PlacedProp>();
     private readonly List<PlacedProp> waterRocks = new List<PlacedProp>();
     private readonly List<Vector2Int> spawnCells = new List<Vector2Int>();
+    private readonly List<Vector2Int> spawnRing = new List<Vector2Int>();
     private readonly Dictionary<Sprite, PropTile> propTiles = new Dictionary<Sprite, PropTile>();
     private Vector2Int playerCell;
     private System.Random rng;
@@ -186,20 +187,32 @@ public class ProceduralMapGenerator : MonoBehaviour
         return InBounds(c.x, c.y) && land[c.x, c.y] && !blocked[c.x, c.y];
     }
 
-    public Vector2 GetRandomSpawnPoint(float minDistanceFromPlayer)
+    // Picks a cell in a ring around the player, so enemies show up nearby but not on top of them.
+    public Vector2 GetRandomSpawnPoint(float minDistanceFromPlayer, float maxDistanceFromPlayer)
     {
-        Vector2 position = CellCenter(spawnCells[Random.Range(0, spawnCells.Count)]);
+        if (player == null) return CellCenter(spawnCells[Random.Range(0, spawnCells.Count)]);
 
-        for (int i = 0; i < 30; i++)
+        Vector2 playerPosition = player.position;
+        spawnRing.Clear();
+        Vector2Int closestFarEnough = spawnCells[0];
+        float closestFarEnoughDistance = float.MaxValue;
+
+        foreach (Vector2Int cell in spawnCells)
         {
-            if (player == null || Vector2.Distance(position, player.position) >= minDistanceFromPlayer)
+            float distance = Vector2.Distance(CellCenter(cell), playerPosition);
+            if (distance < minDistanceFromPlayer) continue;
+
+            if (distance <= maxDistanceFromPlayer) spawnRing.Add(cell);
+            if (distance < closestFarEnoughDistance)
             {
-                return position;
+                closestFarEnoughDistance = distance;
+                closestFarEnough = cell;
             }
-            position = CellCenter(spawnCells[Random.Range(0, spawnCells.Count)]);
         }
 
-        return position;
+        // On a narrow strip of island the ring can be empty - fall back to the nearest cell that's still far enough.
+        Vector2Int chosen = spawnRing.Count > 0 ? spawnRing[Random.Range(0, spawnRing.Count)] : closestFarEnough;
+        return CellCenter(chosen);
     }
 
     public MapCellKind GetCellKind(int x, int y)

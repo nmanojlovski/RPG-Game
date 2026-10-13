@@ -16,7 +16,18 @@ public static class ProceduralLevelSetup
     private const string TreeTilesFolder = "Assets/Sprites/Threes";
     private const string DecoFolder = "Assets/Sprites/Deco/Deco";
     private const string WaterRocksFolder = "Assets/Sprites/Water/Rocks";
+    private const string EnemyPrefabFolder = "Assets/Sprites/Prefabs";
     private const int TreeSortingOrder = 10; // above the player (5), so the player walks behind canopies
+
+    // Enemies appear 5-8 units away: just outside their 5-unit detection range, around the screen edge.
+    private const float MinSpawnDistance = 5f;
+    private const float MaxSpawnDistance = 8f;
+
+    // Like the old hand-made levels: one spawner per enemy type, with new types joining on maps 3 and 5.
+    private static readonly (string prefab, int firstMap)[] SpawnerSetup =
+    {
+        ("Enemy", 1), ("EnemyPawn", 3), ("LancerEnemy", 5)
+    };
 
     // Hand-made pieces of Level 1 (elevation, borders, painted props) that the generator replaces.
     private static readonly string[] HandMadeObjects =
@@ -84,6 +95,7 @@ public static class ProceduralLevelSetup
         var spawnerSettings = new SerializedObject(spawner);
         spawnerSettings.FindProperty("forbiddenAreas").arraySize = 0;
         spawnerSettings.ApplyModifiedPropertiesWithoutUndo();
+        ConfigureSpawners(spawner);
 
         CinemachineConfiner2D confiner = Object.FindAnyObjectByType<CinemachineConfiner2D>();
 
@@ -124,13 +136,14 @@ public static class ProceduralLevelSetup
         Debug.Log($"[MapGen] Created {ScenePath} ({treeTiles.Length} tree tiles: {string.Join(", ", treeOffsets)})");
     }
 
-    // Brings the existing scene's generator up to the current default sizes and themes, keeping its scene references.
-    [MenuItem("Tools/Procedural Map/Apply Default Themes")]
-    public static void ApplyDefaultThemes()
+    // Brings the existing scene up to the current default map sizes, themes and spawners, keeping its scene references.
+    [MenuItem("Tools/Procedural Map/Apply Default Settings")]
+    public static void ApplyDefaultSettings()
     {
         if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        ConfigureSpawners(FindInScene(scene, "EnemySpawner").GetComponent<EnemySpawner>());
         var settings = new SerializedObject(Object.FindAnyObjectByType<ProceduralMapGenerator>());
 
         var defaults = new GameObject("Generator Defaults").AddComponent<ProceduralMapGenerator>();
@@ -146,7 +159,46 @@ public static class ProceduralLevelSetup
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log($"[MapGen] Applied default themes and map sizes to {ScenePath}");
+        Debug.Log($"[MapGen] Applied default map sizes, themes and spawners to {ScenePath}");
+    }
+
+    private static void ConfigureSpawners(EnemySpawner template)
+    {
+        foreach (EnemySpawner other in Object.FindObjectsByType<EnemySpawner>(FindObjectsSortMode.None))
+        {
+            if (other != template) Object.DestroyImmediate(other.gameObject);
+        }
+
+        for (int i = 0; i < SpawnerSetup.Length; i++)
+        {
+            (string prefabName, int firstMap) = SpawnerSetup[i];
+            EnemySpawner spawner = template;
+            if (i > 0)
+            {
+                spawner = new GameObject($"EnemySpawner ({prefabName})").AddComponent<EnemySpawner>();
+                EditorUtility.CopySerialized(template, spawner);
+            }
+
+            var settings = new SerializedObject(spawner);
+            SerializedProperty enemyTypes = settings.FindProperty("enemyTypes");
+            enemyTypes.arraySize = 1;
+            SerializedProperty entry = enemyTypes.GetArrayElementAtIndex(0);
+            entry.FindPropertyRelative("prefab").objectReferenceValue = LoadEnemyPrefab(prefabName);
+            entry.FindPropertyRelative("weight").floatValue = 1f;
+            entry.FindPropertyRelative("unlockDifficulty").floatValue = 0f;
+            settings.FindProperty("firstMap").intValue = firstMap;
+            settings.FindProperty("minSpawnDistanceFromPlayer").floatValue = MinSpawnDistance;
+            settings.FindProperty("maxSpawnDistanceFromPlayer").floatValue = MaxSpawnDistance;
+            settings.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    private static GameObject LoadEnemyPrefab(string name)
+    {
+        string path = $"{EnemyPrefabFolder}/{name}.prefab";
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (prefab == null) throw new System.Exception($"Enemy prefab not found at {path}");
+        return prefab;
     }
 
     [MenuItem("Tools/Procedural Map/Export Map Previews")]

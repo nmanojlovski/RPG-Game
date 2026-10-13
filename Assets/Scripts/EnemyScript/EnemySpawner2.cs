@@ -21,6 +21,24 @@ public class EnemySpawner2 : MonoBehaviourPun
         }
     }
 
+    void OnEnable()
+    {
+        EnemyHealth.OnMonsterDefeated += HandleEnemyDefeated;
+    }
+
+    void OnDisable()
+    {
+        EnemyHealth.OnMonsterDefeated -= HandleEnemyDefeated;
+    }
+
+    private void HandleEnemyDefeated(int xp)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            OnEnemyDied();
+        }
+    }
+
     IEnumerator SpawnRoutine()
     {
         while (true)

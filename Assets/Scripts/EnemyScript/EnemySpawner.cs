@@ -3,8 +3,26 @@ using System.Collections;
 
 public class EnemySpawner : MonoBehaviour
 {
-    [SerializeField] private GameObject spawnerPrefab;
-    [SerializeField] private float spawnerInterval = 3.5f;
+    [System.Serializable]
+    public class EnemySpawnEntry
+    {
+        public GameObject prefab;
+        public float weight = 1f;
+        public float unlockDifficulty = 0f;
+    }
+
+    [SerializeField] private EnemySpawnEntry[] enemyTypes;
+
+    [Header("Spawn Interval")]
+    [SerializeField] private float baseInterval = 5f;
+    [SerializeField] private float minInterval = 1f;
+    [SerializeField] private float maxInterval = 6f;
+    [SerializeField] private float intervalPerDifficulty = 0.15f;
+
+    [Header("Population Cap")]
+    [SerializeField] private int baseCap = 6;
+    [SerializeField] private float capPerDifficulty = 0.5f;
+    [SerializeField] private int hardCapCeiling = 20;
 
     public BoxCollider2D spawnArea;
 
@@ -12,21 +30,79 @@ public class EnemySpawner : MonoBehaviour
 
     void Start()
     {
-        StartCoroutine(spawnEnemy(spawnerInterval, spawnerPrefab));
+        StartCoroutine(spawnEnemy());
     }
 
-
-    private IEnumerator spawnEnemy(float interval, GameObject enemy)
+    private IEnumerator spawnEnemy()
     {
         while (true)
         {
+            float difficulty = GetDifficultyScore();
+
+            float interval = Mathf.Clamp(baseInterval - difficulty * intervalPerDifficulty, minInterval, maxInterval);
             yield return new WaitForSeconds(interval);
 
+            int cap = Mathf.Min(baseCap + Mathf.FloorToInt(difficulty * capPerDifficulty), hardCapCeiling);
+            if (EnemyPopulationTracker.AliveCount >= cap)
+            {
+                continue;
+            }
+
+            GameObject prefab = ChooseEnemyPrefab(difficulty);
+            if (prefab == null)
+            {
+                continue;
+            }
+
             Vector2 spawnPos = GetRandomPointInBounds();
-
-            Instantiate(enemy, spawnPos, Quaternion.identity);
-
+            GameObject enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
+            EnemyPopulationTracker.Register(enemy);
         }
+    }
+
+    private float GetDifficultyScore()
+    {
+        return DifficultyManager.Instance != null ? DifficultyManager.Instance.GetDifficultyScore() : 1f;
+    }
+
+    private GameObject ChooseEnemyPrefab(float difficulty)
+    {
+        if (enemyTypes == null || enemyTypes.Length == 0)
+        {
+            return null;
+        }
+
+        float totalWeight = 0f;
+        foreach (var entry in enemyTypes)
+        {
+            if (entry.prefab != null && difficulty >= entry.unlockDifficulty)
+            {
+                totalWeight += entry.weight;
+            }
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return null;
+        }
+
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+        foreach (var entry in enemyTypes)
+        {
+            if (entry.prefab == null || difficulty < entry.unlockDifficulty)
+            {
+                continue;
+            }
+
+            cumulative += entry.weight;
+            if (roll <= cumulative)
+            {
+                return entry.prefab;
+            }
+        }
+
+        return null;
     }
 
     private Vector2 GetRandomPointInBounds()

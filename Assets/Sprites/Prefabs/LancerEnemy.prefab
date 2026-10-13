@@ -316,6 +316,20 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 8
+  canFlee: 1
+  chasePersistenceTime: 0
+  patrolRadius: 2
+  patrolWaitTime: 1.5
+  patrolSpeedMultiplier: 0.5
+  fleeSpeedMultiplier: 1.3
+  regroupRadius: 6
+  regroupStopDistance: 1.2
+  personalSpaceRadius: 0.7
+  separationStrength: 1
+  alertRadius: 5
+  stuckCheckInterval: 0.3
+  stuckMoveThreshold: 0.05
+  unstuckDuration: 0.4
 --- !u!114 &9208967714617487389
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -331,6 +345,7 @@ MonoBehaviour:
   xpReward: 7
   health: 0
   maxHealth: 10
+  fleeHealthPercent: 0.16
   deathSound: {fileID: 8300000, guid: d89832ecb41c65149bf4157603110d09, type: 3}
   hitSound: {fileID: 8300000, guid: 7e7392623de3eb54dab88bb95ebd70e2, type: 3}
   deathVolume: 5

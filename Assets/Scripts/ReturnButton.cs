@@ -7,6 +7,7 @@ public class ReturnButton : MonoBehaviourPunCallbacks   // ? changed to PunCallb
 {
     public void ReturnToMenu()
     {
+        Time.timeScale = 1f; // skill/stats panels pause the game; don't carry that into the menu
         SceneManager.LoadScene("MainMenu");
     }
 

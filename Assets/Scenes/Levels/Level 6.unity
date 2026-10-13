@@ -148,8 +148,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5416b977fb1c52340b3dd70139ff7a7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  spawnerPrefab: {fileID: 7285906628478459134, guid: 8c38af09620dd2949aa05d4e35107d03, type: 3}
-  spawnerInterval: 7
+  enemyTypes:
+  - prefab: {fileID: 7285906628478459134, guid: 8c38af09620dd2949aa05d4e35107d03, type: 3}
+    weight: 1
+    unlockDifficulty: 1
+  baseInterval: 3.5
+  minInterval: 1
+  maxInterval: 6
+  intervalPerDifficulty: 0.15
+  baseCap: 6
+  capPerDifficulty: 0.5
+  hardCapCeiling: 20
   spawnArea: {fileID: 1855500011}
   forbiddenAreas: []
 --- !u!4 &9734789
@@ -331,8 +340,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5416b977fb1c52340b3dd70139ff7a7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  spawnerPrefab: {fileID: 1295494520768457045, guid: cdd17029de675274dae1a89065cc7012, type: 3}
-  spawnerInterval: 5
+  enemyTypes:
+  - prefab: {fileID: 1295494520768457045, guid: cdd17029de675274dae1a89065cc7012, type: 3}
+    weight: 1
+    unlockDifficulty: 1
+  baseInterval: 3.5
+  minInterval: 1
+  maxInterval: 6
+  intervalPerDifficulty: 0.15
+  baseCap: 6
+  capPerDifficulty: 0.5
+  hardCapCeiling: 20
   spawnArea: {fileID: 1859485776}
   forbiddenAreas: []
 --- !u!4 &34226553
@@ -4828,7 +4846,7 @@ Tilemap:
       - {fileID: 2027242443, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: 925477987, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: -1667512590, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 8, y: -7, z: 0}
@@ -4872,7 +4890,7 @@ Tilemap:
       - {fileID: 2027242443, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: 925477987, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: -1667512590, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 9, y: 1, z: 0}
@@ -5826,8 +5844,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5416b977fb1c52340b3dd70139ff7a7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  spawnerPrefab: {fileID: 4857273018453978714, guid: 3fec61b304bf02444bba3f910c8773d0, type: 3}
-  spawnerInterval: 3.5
+  enemyTypes:
+  - prefab: {fileID: 4857273018453978714, guid: 3fec61b304bf02444bba3f910c8773d0, type: 3}
+    weight: 1
+    unlockDifficulty: 1
+  baseInterval: 3.5
+  minInterval: 1
+  maxInterval: 6
+  intervalPerDifficulty: 0.15
+  baseCap: 6
+  capPerDifficulty: 0.5
+  hardCapCeiling: 20
   spawnArea: {fileID: 1244778373}
   forbiddenAreas: []
 --- !u!4 &1218191976
@@ -12200,7 +12227,7 @@ Tilemap:
       - {fileID: 1034749223, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1840864693, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1752895836, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 1, y: -9, z: 0}
@@ -13775,7 +13802,7 @@ Tilemap:
       - {fileID: -199844659, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -789843706, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -41119423, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -4, y: 8, z: 0}
@@ -14330,7 +14357,7 @@ Tilemap:
       - {fileID: -942400503, guid: 9febe746785f13e4eb668b87338440af, type: 3}
       - {fileID: -1634142050, guid: 9febe746785f13e4eb668b87338440af, type: 3}
       - {fileID: -1844234607, guid: 9febe746785f13e4eb668b87338440af, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -14, y: 11, z: 0}
@@ -14375,7 +14402,7 @@ Tilemap:
       - {fileID: -1406603238, guid: 9febe746785f13e4eb668b87338440af, type: 3}
       - {fileID: 273736014, guid: 9febe746785f13e4eb668b87338440af, type: 3}
       - {fileID: -6532977, guid: 9febe746785f13e4eb668b87338440af, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -9, y: 11, z: 0}

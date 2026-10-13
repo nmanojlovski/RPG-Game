@@ -20,6 +20,11 @@ public class EnemyMovement : MonoBehaviour
     public Transform detectionPoint;
     public LayerMask playerLayer;
 
+    [Header("Behavior Profile")]
+    public bool canFlee = true;
+    public float chasePersistenceTime = 0f;
+    private float chaseGiveUpTimer;
+
     [Header("Patrol")]
     public float patrolRadius = 4f;
     public float patrolWaitTime = 1.5f;
@@ -295,7 +300,7 @@ public class EnemyMovement : MonoBehaviour
 
     void CheckForPlayer()
     {
-        if (enemyHealth != null && enemyHealth.IsLowHealth)
+        if (canFlee && enemyHealth != null && enemyHealth.IsLowHealth)
         {
             if (enemyState != EnemyState.Fleeing)
             {
@@ -308,6 +313,7 @@ public class EnemyMovement : MonoBehaviour
 
         if (hits.Length > 0)
         {
+            chaseGiveUpTimer = 0f;
             player = hits[0].transform;
 
             if (Vector2.Distance(transform.position, player.transform.position) <= attackRange && attackCooldownTimer <= 0)
@@ -327,6 +333,16 @@ public class EnemyMovement : MonoBehaviour
         }
         else
         {
+            if (enemyState == EnemyState.Chasing || enemyState == EnemyState.Attacking)
+            {
+                chaseGiveUpTimer += Time.deltaTime;
+                if (chaseGiveUpTimer < chasePersistenceTime)
+                {
+                    return;
+                }
+            }
+
+            chaseGiveUpTimer = 0f;
             player = null;
 
             if (enemyState != EnemyState.Patrolling)

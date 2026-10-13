@@ -10,7 +10,9 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float hitVolume = 0.6f;
 
     public TMP_Text score;
-    
+
+    public static event System.Action<int> OnPlayerDamaged;
+
     void Start()
     {
         StatsManager.Instance.currentHealth = StatsManager.Instance.maxHealth;
@@ -19,6 +21,11 @@ public class PlayerHealth : MonoBehaviour
 
     public void DamageTaken(int amount)
     {
+        if (amount < 0)
+        {
+            OnPlayerDamaged?.Invoke(amount);
+        }
+
         StatsManager.Instance.currentHealth += amount;
         score.text = "HP: " + StatsManager.Instance.currentHealth + "/" + StatsManager.Instance.maxHealth;
 

@@ -359,6 +359,7 @@ GameObject:
   m_Component:
   - component: {fileID: 54918343}
   - component: {fileID: 54918344}
+  - component: {fileID: 54918345}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -395,6 +396,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   level: 1
   availablePoints: 5
+--- !u!114 &54918345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 54918340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac583157add68704a926d61386a29717, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DifficultyManager
+  killsPerStreakPoint: 5
+  maxStreakBonus: 5
 --- !u!224 &75431535 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7660260270648622715, guid: 056215c6629f1a842a9cacaea8d4ad17, type: 3}
@@ -1449,8 +1464,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5416b977fb1c52340b3dd70139ff7a7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
-  spawnerPrefab: {fileID: 4857273018453978714, guid: 3fec61b304bf02444bba3f910c8773d0, type: 3}
-  spawnerInterval: 3.5
+  enemyTypes:
+  - prefab: {fileID: 4857273018453978714, guid: 3fec61b304bf02444bba3f910c8773d0, type: 3}
+    weight: 0.5
+    unlockDifficulty: 0.3
+  baseInterval: 3.5
+  minInterval: 1
+  maxInterval: 6
+  intervalPerDifficulty: 0.15
+  baseCap: 6
+  capPerDifficulty: 0.5
+  hardCapCeiling: 20
   spawnArea: {fileID: 1536059155}
   forbiddenAreas:
   - {fileID: 27949646}
@@ -4627,7 +4651,7 @@ Tilemap:
       - {fileID: 1392721060, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: -1026517326, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
       - {fileID: 59181745, guid: 13ec705cfd207bd489fbe04699726359, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -4, y: 4, z: 0}
@@ -8280,7 +8304,7 @@ Tilemap:
       - {fileID: 1034749223, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1840864693, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1752895836, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: -4, y: -6, z: 0}
@@ -8370,7 +8394,7 @@ Tilemap:
       - {fileID: 1034749223, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1840864693, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1752895836, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 2, y: -6, z: 0}
@@ -8415,7 +8439,7 @@ Tilemap:
       - {fileID: 1034749223, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1840864693, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: 1752895836, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 5, y: -6, z: 0}
@@ -8670,7 +8694,7 @@ Tilemap:
       - {fileID: -199844659, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -789843706, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -41119423, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5.0000005
+      m_AnimationSpeed: 5
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 9, y: 1, z: 0}
@@ -9030,7 +9054,7 @@ Tilemap:
       - {fileID: 8475118079717534232, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -5206953073759774522, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
       - {fileID: -8207782414505271864, guid: 95d6d55d42c27a749b457625ed906256, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 8, y: 5, z: 0}

@@ -14,6 +14,8 @@ public static class ProceduralLevelSetup
     private const string ScenePath = "Assets/Scenes/Levels/ProceduralLevel.unity";
     private const string FlatTilesFolder = "Assets/Sprites/Tile Palettes";
     private const string TreeTilesFolder = "Assets/Sprites/Threes";
+    private const string DecoFolder = "Assets/Sprites/Deco/Deco";
+    private const string WaterRocksFolder = "Assets/Sprites/Water/Rocks";
     private const int TreeSortingOrder = 10; // above the player (5), so the player walks behind canopies
 
     // Hand-made pieces of Level 1 (elevation, borders, painted props) that the generator replaces.
@@ -21,6 +23,12 @@ public static class ProceduralLevelSetup
     {
         "Collision-High", "Collision-Low", "Non-Collision-Low", "Non-Collision-High",
         "MountainBoundary", "Animations", "Borders", "ForbidenArea1"
+    };
+
+    private static readonly string[] TunableSettings =
+    {
+        "baseSize", "sizeGrowthPerMap", "maxSize", "waterMargin", "landFillPercent", "smoothingIterations",
+        "minLakeSize", "minIslandFraction", "minObstacleSpacing", "playerClearRadius"
     };
 
     // Tilemap_Flat sprite number for each neighbour mask (N=1, E=2, S=4, W=8).
@@ -106,6 +114,7 @@ public static class ProceduralLevelSetup
             offsets.GetArrayElementAtIndex(i).vector2IntValue = treeOffsets[i];
         }
 
+        SetDefaultThemes(settings.FindProperty("themes"));
         settings.ApplyModifiedPropertiesWithoutUndo();
 
         EditorSceneManager.MarkSceneDirty(scene);
@@ -113,6 +122,31 @@ public static class ProceduralLevelSetup
         AddToBuildSettings(ScenePath);
 
         Debug.Log($"[MapGen] Created {ScenePath} ({treeTiles.Length} tree tiles: {string.Join(", ", treeOffsets)})");
+    }
+
+    // Brings the existing scene's generator up to the current default sizes and themes, keeping its scene references.
+    [MenuItem("Tools/Procedural Map/Apply Default Themes")]
+    public static void ApplyDefaultThemes()
+    {
+        if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+        Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var settings = new SerializedObject(Object.FindAnyObjectByType<ProceduralMapGenerator>());
+
+        var defaults = new GameObject("Generator Defaults").AddComponent<ProceduralMapGenerator>();
+        var defaultSettings = new SerializedObject(defaults);
+        foreach (string name in TunableSettings)
+        {
+            settings.CopyFromSerializedProperty(defaultSettings.FindProperty(name));
+        }
+        Object.DestroyImmediate(defaults.gameObject);
+
+        SetDefaultThemes(settings.FindProperty("themes"));
+        settings.ApplyModifiedPropertiesWithoutUndo();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log($"[MapGen] Applied default themes and map sizes to {ScenePath}");
     }
 
     [MenuItem("Tools/Procedural Map/Export Map Previews")]
@@ -138,6 +172,99 @@ public static class ProceduralLevelSetup
         // Reload from disk so the preview tiles never end up saved into the scene.
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         Debug.Log($"[MapGen] Previews written to {outputFolder}");
+    }
+
+    // Map 1 = Meadow, 2 = Rocky coast, 3 = Pumpkin farm, 4 = Bone fields, then they repeat.
+    private static void SetDefaultThemes(SerializedProperty themes)
+    {
+        themes.arraySize = 4;
+
+        SetTheme(themes.GetArrayElementAtIndex(0), "Meadow", Color.white, beachWidth: 1, trees: 1.4f,
+            obstacles: Deco(9), obstacleDensity: 0.4f,
+            decorations: Deco(1, 2, 3, 10, 11), decorationChance: 0.15f,
+            waterRocks: new Sprite[0][], waterRockDensity: 0f);
+
+        SetTheme(themes.GetArrayElementAtIndex(1), "Rocky coast", new Color(0.85f, 0.93f, 0.95f), beachWidth: 2, trees: 0.5f,
+            obstacles: Deco(5, 6), obstacleDensity: 1.0f,
+            decorations: Deco(4, 7), decorationChance: 0.12f,
+            waterRocks: WaterRocks(), waterRockDensity: 2.5f);
+
+        SetTheme(themes.GetArrayElementAtIndex(2), "Pumpkin farm", new Color(1f, 0.95f, 0.78f), beachWidth: 1, trees: 0.4f,
+            obstacles: Deco(13, 18, 8), obstacleDensity: 0.8f,
+            decorations: Deco(12, 10, 1), decorationChance: 0.14f,
+            waterRocks: new Sprite[0][], waterRockDensity: 0f);
+
+        SetTheme(themes.GetArrayElementAtIndex(3), "Bone fields", new Color(0.95f, 0.82f, 0.62f), beachWidth: 2, trees: 0.25f,
+            obstacles: Deco(16, 17, 6), obstacleDensity: 0.6f,
+            decorations: Deco(14, 15, 4), decorationChance: 0.15f,
+            waterRocks: new Sprite[0][], waterRockDensity: 0f);
+    }
+
+    private static void SetTheme(SerializedProperty theme, string name, Color tint, int beachWidth, float trees,
+        Sprite[] obstacles, float obstacleDensity, Sprite[] decorations, float decorationChance,
+        Sprite[][] waterRocks, float waterRockDensity)
+    {
+        theme.FindPropertyRelative("name").stringValue = name;
+        theme.FindPropertyRelative("groundTint").colorValue = tint;
+        theme.FindPropertyRelative("beachWidth").intValue = beachWidth;
+        theme.FindPropertyRelative("treesPer100Cells").floatValue = trees;
+        SetSprites(theme.FindPropertyRelative("obstacles"), obstacles);
+        theme.FindPropertyRelative("obstaclesPer100Cells").floatValue = obstacleDensity;
+        SetSprites(theme.FindPropertyRelative("decorations"), decorations);
+        theme.FindPropertyRelative("decorationChance").floatValue = decorationChance;
+
+        SerializedProperty rocks = theme.FindPropertyRelative("waterRocks");
+        rocks.arraySize = waterRocks.Length;
+        for (int i = 0; i < waterRocks.Length; i++)
+        {
+            SetSprites(rocks.GetArrayElementAtIndex(i).FindPropertyRelative("frames"), waterRocks[i]);
+        }
+        theme.FindPropertyRelative("waterRocksPer100WaterCells").floatValue = waterRockDensity;
+    }
+
+    private static void SetSprites(SerializedProperty array, Sprite[] sprites)
+    {
+        array.arraySize = sprites.Length;
+        for (int i = 0; i < sprites.Length; i++)
+        {
+            array.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
+        }
+    }
+
+    private static Sprite[] Deco(params int[] numbers)
+    {
+        return numbers.Select(n => LargestSprite($"{DecoFolder}/{n:D2}.png")).ToArray();
+    }
+
+    private static Sprite LargestSprite(string path)
+    {
+        Sprite sprite = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>()
+            .OrderByDescending(s => s.rect.width * s.rect.height)
+            .FirstOrDefault();
+        if (sprite == null) throw new System.Exception($"No sprite found in {path}");
+        return sprite;
+    }
+
+    // Each Rocks_0X sheet is a strip of square frames, but auto-slicing split some frames into
+    // small pieces - keep the biggest piece of every frame.
+    private static Sprite[][] WaterRocks()
+    {
+        var rocks = new List<Sprite[]>();
+        for (int n = 1; n <= 4; n++)
+        {
+            string path = $"{WaterRocksFolder}/Rocks_{n:D2}.png";
+            Sprite[] slices = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().ToArray();
+            if (slices.Length == 0) continue;
+
+            float frameSize = slices[0].texture.height;
+            Sprite[] frames = slices
+                .GroupBy(s => Mathf.FloorToInt(s.rect.center.x / frameSize))
+                .OrderBy(g => g.Key)
+                .Select(g => g.OrderByDescending(s => s.rect.width * s.rect.height).First())
+                .ToArray();
+            rocks.Add(frames);
+        }
+        return rocks.ToArray();
     }
 
     private static GameObject FindInScene(Scene scene, string name)
@@ -246,7 +373,7 @@ public static class ProceduralLevelSetup
                     MapCellKind.Water => new Color32(64, 150, 200, 255),
                     MapCellKind.Sand => new Color32(230, 205, 120, 255),
                     MapCellKind.Grass => new Color32(110, 175, 70, 255),
-                    MapCellKind.TreeCanopy => new Color32(40, 100, 40, 255),
+                    MapCellKind.Covered => new Color32(40, 100, 40, 255),
                     _ => new Color32(100, 60, 30, 255)
                 };
                 if (new Vector2Int(x, y) == generator.PlayerCell) color = new Color32(220, 30, 30, 255);
@@ -270,7 +397,7 @@ public static class ProceduralLevelSetup
 
     private static byte[] RenderMap(Rect worldBounds)
     {
-        const int pixelsPerUnit = 16;
+        const int pixelsPerUnit = 32;
         var cameraObject = new GameObject("Map Preview Camera");
         var renderTexture = new RenderTexture(
             Mathf.RoundToInt(worldBounds.width * pixelsPerUnit),

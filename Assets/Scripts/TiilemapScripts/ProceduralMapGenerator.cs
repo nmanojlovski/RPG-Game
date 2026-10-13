@@ -8,12 +8,39 @@ public enum MapCellKind
     Water,
     Sand,
     Grass,
-    TreeCanopy,
-    TreeTrunk
+    Covered,
+    Blocked
+}
+
+[System.Serializable]
+public class SpriteAnimation
+{
+    public Sprite[] frames;
+}
+
+[System.Serializable]
+public class MapTheme
+{
+    public string name = "Meadow";
+    public Color groundTint = Color.white;
+    [Min(1)] public int beachWidth = 1;
+    public float treesPer100Cells = 1.2f;
+
+    [Tooltip("Solid props the player has to walk around.")]
+    public Sprite[] obstacles = new Sprite[0];
+    public float obstaclesPer100Cells = 0.5f;
+
+    [Tooltip("Small props on the grass that can be walked over.")]
+    public Sprite[] decorations = new Sprite[0];
+    [Range(0f, 1f)] public float decorationChance = 0.05f;
+
+    [Tooltip("Animated rocks out in the sea.")]
+    public SpriteAnimation[] waterRocks = new SpriteAnimation[0];
+    public float waterRocksPer100WaterCells;
 }
 
 // Builds a flat island map at load time: noise + cellular automata for the coastline,
-// 4-neighbour autotiling for grass/sand edges, and trees that never cut off part of the island.
+// 4-neighbour autotiling for grass/sand edges, and themed obstacles that never cut off part of the island.
 public class ProceduralMapGenerator : MonoBehaviour
 {
     public static ProceduralMapGenerator Instance { get; private set; }
@@ -34,6 +61,9 @@ public class ProceduralMapGenerator : MonoBehaviour
     [SerializeField] private TileBase[] treeTiles;
     [SerializeField] private Vector2Int[] treeTileOffsets;
 
+    [Header("Themes (map 1 uses the first one, then they repeat)")]
+    [SerializeField] private MapTheme[] themes;
+
     [Header("Scene objects fitted to the generated map")]
     [SerializeField] private Transform player;
     [SerializeField] private SpriteRenderer water;
@@ -41,25 +71,20 @@ public class ProceduralMapGenerator : MonoBehaviour
     [SerializeField] private BoxCollider2D enemySpawnArea;
 
     [Header("Map size (grows with every new map)")]
-    [SerializeField] private Vector2Int baseSize = new Vector2Int(40, 26);
-    [SerializeField] private Vector2Int sizeGrowthPerMap = new Vector2Int(6, 4);
-    [SerializeField] private Vector2Int maxSize = new Vector2Int(70, 46);
+    [SerializeField] private Vector2Int baseSize = new Vector2Int(28, 18);
+    [SerializeField] private Vector2Int sizeGrowthPerMap = new Vector2Int(4, 2);
+    [SerializeField] private Vector2Int maxSize = new Vector2Int(48, 28);
     [SerializeField] private int waterMargin = 3;
 
     [Header("Island shape")]
     [SerializeField, Range(0f, 1f)] private float landFillPercent = 0.72f;
     [SerializeField] private int smoothingIterations = 5;
     [SerializeField] private int minLakeSize = 12;
-    [SerializeField] private int minIslandSize = 300;
+    [SerializeField, Range(0f, 1f)] private float minIslandFraction = 0.4f;
 
-    [Header("Trees")]
-    [SerializeField] private float treesPer100Cells = 1.2f;
-    [SerializeField] private float extraTreesPer100CellsPerMap = 0.3f;
-    [SerializeField] private int minTreeSpacing = 3;
-    [SerializeField] private int playerClearRadius = 5;
-
-    [Header("Decorations")]
-    [SerializeField, Range(0f, 1f)] private float decorationChance = 0.05f;
+    [Header("Obstacles")]
+    [SerializeField] private int minObstacleSpacing = 3;
+    [SerializeField] private int playerClearRadius = 3;
 
     [Header("Seed")]
     [SerializeField] private bool useFixedSeed;
@@ -68,19 +93,28 @@ public class ProceduralMapGenerator : MonoBehaviour
 
     public int Seed { get; private set; }
     public int MapNumber { get; private set; }
+    public MapTheme Theme { get; private set; }
     public int Width => width;
     public int Height => height;
     public Vector2Int PlayerCell => playerCell;
     public Rect WorldBounds { get; private set; }
 
+    private struct PlacedProp
+    {
+        public Vector2Int cell;
+        public PropTile tile; // null for a tree
+    }
+
     private int width;
     private int height;
     private bool[,] land;
     private bool[,] grass;
-    private bool[,] canopy;
+    private bool[,] covered;
     private bool[,] blocked;
-    private readonly List<Vector2Int> trunkCells = new List<Vector2Int>();
+    private readonly List<PlacedProp> obstacles = new List<PlacedProp>();
+    private readonly List<PlacedProp> waterRocks = new List<PlacedProp>();
     private readonly List<Vector2Int> spawnCells = new List<Vector2Int>();
+    private readonly Dictionary<Sprite, PropTile> propTiles = new Dictionary<Sprite, PropTile>();
     private Vector2Int playerCell;
     private System.Random rng;
     private Tile collisionTile;
@@ -109,29 +143,41 @@ public class ProceduralMapGenerator : MonoBehaviour
     public void Generate(int mapNumber, int seed)
     {
         MapNumber = Mathf.Max(1, mapNumber);
+        Theme = themes != null && themes.Length > 0 ? themes[(MapNumber - 1) % themes.Length] : new MapTheme();
+
         int growthSteps = MapNumber - 1;
         width = Mathf.Min(baseSize.x + sizeGrowthPerMap.x * growthSteps, maxSize.x);
         height = Mathf.Min(baseSize.y + sizeGrowthPerMap.y * growthSteps, maxSize.y);
+        int interiorCells = (width - 2 * waterMargin) * (height - 2 * waterMargin);
 
         // A rare unlucky seed can produce a tiny island - just roll the next one.
         for (int attempt = 0; attempt < 10; attempt++)
         {
             Seed = seed + attempt;
             rng = new System.Random(Seed);
-            if (GenerateIsland() >= minIslandSize) break;
+            if (GenerateIsland() >= interiorCells * minIslandFraction) break;
         }
 
-        grass = ErodeToInterior(land);
-        canopy = new bool[width, height];
+        grass = land;
+        for (int i = 0; i < Theme.beachWidth; i++)
+        {
+            grass = ErodeToInterior(grass);
+        }
+
+        covered = new bool[width, height];
         blocked = new bool[width, height];
         playerCell = FindPlayerCell();
-        PlaceTrees();
+
+        obstacles.Clear();
+        PlaceObstacles(Theme.obstaclesPer100Cells, Theme.obstacles);
+        PlaceObstacles(Theme.treesPer100Cells, null);
+        PlaceWaterRocks();
         CollectSpawnCells();
 
         PaintTilemaps();
         FitSceneObjects();
 
-        Debug.Log($"[MapGen] Map {MapNumber}: seed {Seed}, {width}x{height}, {trunkCells.Count} trees, {spawnCells.Count} spawnable cells");
+        Debug.Log($"[MapGen] Map {MapNumber} '{Theme.name}': seed {Seed}, {width}x{height}, {obstacles.Count} obstacles, {waterRocks.Count} water rocks, {spawnCells.Count} spawnable cells");
     }
 
     public bool IsWalkable(Vector2 worldPosition)
@@ -159,8 +205,8 @@ public class ProceduralMapGenerator : MonoBehaviour
     public MapCellKind GetCellKind(int x, int y)
     {
         if (!land[x, y]) return MapCellKind.Water;
-        if (blocked[x, y]) return MapCellKind.TreeTrunk;
-        if (canopy[x, y]) return MapCellKind.TreeCanopy;
+        if (blocked[x, y]) return MapCellKind.Blocked;
+        if (covered[x, y]) return MapCellKind.Covered;
         return grass[x, y] ? MapCellKind.Grass : MapCellKind.Sand;
     }
 
@@ -301,7 +347,7 @@ public class ProceduralMapGenerator : MonoBehaviour
         return regions;
     }
 
-    // Grass sits one tile inside the sand so the coast always shows a beach ring.
+    // Each erosion pass pulls the grass one tile further in, widening the sand beach.
     private bool[,] ErodeToInterior(bool[,] source)
     {
         bool[,] result = new bool[width, height];
@@ -315,7 +361,7 @@ public class ProceduralMapGenerator : MonoBehaviour
         return result;
     }
 
-    // ---------- Player, trees, spawn points ----------
+    // ---------- Player, obstacles, spawn points ----------
 
     private Vector2Int FindPlayerCell()
     {
@@ -345,55 +391,133 @@ public class ProceduralMapGenerator : MonoBehaviour
         return best;
     }
 
-    private void PlaceTrees()
+    // Pass null props to place trees.
+    private void PlaceObstacles(float per100Cells, Sprite[] props)
     {
-        trunkCells.Clear();
-        if (treeTiles == null || treeTiles.Length == 0) return;
+        bool isTree = props == null;
+        if (isTree ? treeTiles == null || treeTiles.Length == 0 : props.Length == 0) return;
 
-        float density = treesPer100Cells + extraTreesPer100CellsPerMap * (MapNumber - 1);
-        int targetTrees = Mathf.RoundToInt(width * height / 100f * density);
+        int target = Mathf.RoundToInt(width * height / 100f * per100Cells);
         int reachable = CountReachableCells();
+        int placed = 0;
 
-        for (int attempt = 0; attempt < targetTrees * 25 && trunkCells.Count < targetTrees; attempt++)
+        // Trying every land cell (in random order) fills small islands as reliably as big ones.
+        foreach (Vector2Int cell in ShuffledLandCells())
         {
-            Vector2Int trunk = new Vector2Int(rng.Next(width), rng.Next(height));
-            if (!CanPlaceTree(trunk)) continue;
+            if (placed >= target) break;
 
-            // Only keep the tree if blocking its trunk doesn't cut any part of the island off.
-            blocked[trunk.x, trunk.y] = true;
+            PropTile prop = isTree ? null : GetPropTile(props[rng.Next(props.Length)]);
+            Vector2Int[] footprint = isTree ? treeTileOffsets : Footprint(prop);
+            if (!CanPlaceObstacle(cell, footprint, needsGrass: isTree)) continue;
+
+            // Only keep it if blocking this cell doesn't cut any part of the island off.
+            blocked[cell.x, cell.y] = true;
             int reachableAfter = CountReachableCells();
             if (reachableAfter != reachable - 1)
             {
-                blocked[trunk.x, trunk.y] = false;
+                blocked[cell.x, cell.y] = false;
                 continue;
             }
 
             reachable = reachableAfter;
-            trunkCells.Add(trunk);
-            foreach (var offset in treeTileOffsets)
+            foreach (var offset in footprint)
             {
-                Vector2Int c = trunk + offset;
-                canopy[c.x, c.y] = true;
+                covered[cell.x + offset.x, cell.y + offset.y] = true;
             }
+            obstacles.Add(new PlacedProp { cell = cell, tile = prop });
+            placed++;
         }
     }
 
-    private bool CanPlaceTree(Vector2Int trunk)
+    private List<Vector2Int> ShuffledLandCells()
     {
-        if (Chebyshev(trunk, playerCell) <= playerClearRadius) return false;
-
-        foreach (var offset in treeTileOffsets)
+        var cells = new List<Vector2Int>();
+        for (int x = 0; x < width; x++)
         {
-            Vector2Int c = trunk + offset;
-            if (!InBounds(c.x, c.y) || !grass[c.x, c.y]) return false;
+            for (int y = 0; y < height; y++)
+            {
+                if (land[x, y]) cells.Add(new Vector2Int(x, y));
+            }
         }
 
-        foreach (var other in trunkCells)
+        for (int i = cells.Count - 1; i > 0; i--)
         {
-            if (Chebyshev(trunk, other) < minTreeSpacing) return false;
+            int j = rng.Next(i + 1);
+            (cells[i], cells[j]) = (cells[j], cells[i]);
+        }
+        return cells;
+    }
+
+    private bool CanPlaceObstacle(Vector2Int cell, Vector2Int[] footprint, bool needsGrass)
+    {
+        if (Chebyshev(cell, playerCell) <= playerClearRadius) return false;
+
+        foreach (var offset in footprint)
+        {
+            Vector2Int c = cell + offset;
+            if (!InBounds(c.x, c.y) || !land[c.x, c.y] || covered[c.x, c.y]) return false;
+            if (needsGrass && !grass[c.x, c.y]) return false;
+        }
+
+        foreach (var other in obstacles)
+        {
+            if (Chebyshev(cell, other.cell) < minObstacleSpacing) return false;
         }
 
         return true;
+    }
+
+    // Cells a prop's sprite covers, so nothing spawns underneath it.
+    private static Vector2Int[] Footprint(PropTile prop)
+    {
+        Vector2 size = prop.WorldSize;
+        int minX = Mathf.FloorToInt(0.5f - size.x / 2f);
+        int maxX = Mathf.CeilToInt(size.x / 2f - 0.5f);
+        int maxY = Mathf.Max(0, Mathf.CeilToInt(PropTile.GroundLevel + size.y - 0.5f));
+
+        var cells = new List<Vector2Int>();
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int y = 0; y <= maxY; y++)
+            {
+                cells.Add(new Vector2Int(x, y));
+            }
+        }
+        return cells.ToArray();
+    }
+
+    private void PlaceWaterRocks()
+    {
+        waterRocks.Clear();
+        SpriteAnimation[] rocks = Theme.waterRocks;
+        if (rocks == null || rocks.Length == 0) return;
+
+        int waterCells = 0;
+        foreach (bool isLand in land)
+        {
+            if (!isLand) waterCells++;
+        }
+        int target = Mathf.RoundToInt(waterCells / 100f * Theme.waterRocksPer100WaterCells);
+
+        for (int attempt = 0; attempt < target * 25 && waterRocks.Count < target; attempt++)
+        {
+            Vector2Int cell = new Vector2Int(rng.Next(width), rng.Next(height));
+            if (HasLandWithin(cell, 2) || waterRocks.Exists(r => Chebyshev(r.cell, cell) < 3)) continue;
+
+            waterRocks.Add(new PlacedProp { cell = cell, tile = GetPropTile(rocks[rng.Next(rocks.Length)].frames) });
+        }
+    }
+
+    private bool HasLandWithin(Vector2Int cell, int distance)
+    {
+        for (int x = cell.x - distance; x <= cell.x + distance; x++)
+        {
+            for (int y = cell.y - distance; y <= cell.y + distance; y++)
+            {
+                if (InBounds(x, y) && land[x, y]) return true;
+            }
+        }
+        return false;
     }
 
     private int CountReachableCells()
@@ -428,7 +552,7 @@ public class ProceduralMapGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                if (land[x, y] && !blocked[x, y] && !canopy[x, y]) spawnCells.Add(new Vector2Int(x, y));
+                if (land[x, y] && !covered[x, y]) spawnCells.Add(new Vector2Int(x, y));
             }
         }
     }
@@ -449,6 +573,11 @@ public class ProceduralMapGenerator : MonoBehaviour
         treeTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
 
+        sandTilemap.color = Theme.groundTint;
+        grassTilemap.color = Theme.groundTint;
+
+        int decorationOptions = grassDecorations.Length + Theme.decorations.Length;
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -468,23 +597,53 @@ public class ProceduralMapGenerator : MonoBehaviour
                 int grassMask = NeighbourMask(grass, x, y);
                 grassTilemap.SetTile(cell, grassTiles[grassMask]);
 
-                bool canDecorate = grassMask == 15 && !canopy[x, y] && new Vector2Int(x, y) != playerCell;
-                if (canDecorate && grassDecorations.Length > 0 && rng.NextDouble() < decorationChance)
+                bool canDecorate = grassMask == 15 && !covered[x, y] && new Vector2Int(x, y) != playerCell;
+                if (canDecorate && decorationOptions > 0 && rng.NextDouble() < Theme.decorationChance)
                 {
-                    decorationTilemap.SetTile(cell, grassDecorations[rng.Next(grassDecorations.Length)]);
+                    int pick = rng.Next(decorationOptions);
+                    TileBase decoration = pick < grassDecorations.Length
+                        ? grassDecorations[pick]
+                        : GetPropTile(Theme.decorations[pick - grassDecorations.Length]);
+                    decorationTilemap.SetTile(cell, decoration);
                 }
             }
         }
 
-        foreach (var trunk in trunkCells)
+        foreach (var obstacle in obstacles)
         {
-            collisionTilemap.SetTile(ToTilemapCell(trunk.x, trunk.y), collisionTile);
-            for (int i = 0; i < treeTiles.Length; i++)
+            Vector2Int c = obstacle.cell;
+            collisionTilemap.SetTile(ToTilemapCell(c.x, c.y), collisionTile);
+
+            if (obstacle.tile == null)
             {
-                Vector2Int c = trunk + treeTileOffsets[i];
-                treeTilemap.SetTile(ToTilemapCell(c.x, c.y), treeTiles[i]);
+                for (int i = 0; i < treeTiles.Length; i++)
+                {
+                    Vector2Int t = c + treeTileOffsets[i];
+                    treeTilemap.SetTile(ToTilemapCell(t.x, t.y), treeTiles[i]);
+                }
+            }
+            else
+            {
+                // Tall props draw over the player so they can be walked behind; low ones draw under.
+                Tilemap layer = obstacle.tile.WorldSize.y > 1f ? treeTilemap : decorationTilemap;
+                layer.SetTile(ToTilemapCell(c.x, c.y), obstacle.tile);
             }
         }
+
+        foreach (var rock in waterRocks)
+        {
+            decorationTilemap.SetTile(ToTilemapCell(rock.cell.x, rock.cell.y), rock.tile);
+        }
+    }
+
+    private PropTile GetPropTile(params Sprite[] frames)
+    {
+        if (!propTiles.TryGetValue(frames[0], out PropTile tile))
+        {
+            tile = PropTile.Create(frames);
+            propTiles[frames[0]] = tile;
+        }
+        return tile;
     }
 
     private int NeighbourMask(bool[,] map, int x, int y)

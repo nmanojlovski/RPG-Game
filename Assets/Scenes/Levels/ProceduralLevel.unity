@@ -3356,23 +3356,119 @@ MonoBehaviour:
   - {x: -1, y: 0}
   - {x: 0, y: 0}
   - {x: 1, y: 0}
+  themes:
+  - name: Meadow
+    groundTint: {r: 1, g: 1, b: 1, a: 1}
+    beachWidth: 1
+    treesPer100Cells: 1.4
+    obstacles:
+    - {fileID: -3356593810811537127, guid: 8df9c929994416a4c9f0a36c3cee2691, type: 3}
+    obstaclesPer100Cells: 0.4
+    decorations:
+    - {fileID: -3164809056393425246, guid: 767f2bfc0ca2a6b4582514a372e215d1, type: 3}
+    - {fileID: -5225540622116197949, guid: c27beea4b2c4d8444b7c4085145cefa9, type: 3}
+    - {fileID: 8793915729297761979, guid: 00919e1380bb11d46baab10a6c33ddee, type: 3}
+    - {fileID: -5099292496197868168, guid: 1e1602f96f44ab14688936b49d420626, type: 3}
+    - {fileID: -2966200626249415253, guid: d9eab9abad685454181a7b43d598ca8e, type: 3}
+    decorationChance: 0.15
+    waterRocks: []
+    waterRocksPer100WaterCells: 0
+  - name: Rocky coast
+    groundTint: {r: 0.85, g: 0.93, b: 0.95, a: 1}
+    beachWidth: 2
+    treesPer100Cells: 0.5
+    obstacles:
+    - {fileID: -2276259661975475453, guid: 655fe346d41dc6f40aac157e2ab3ec7a, type: 3}
+    - {fileID: 141893073332109768, guid: b4ec92f7332fef84fa7cc0df24bace4b, type: 3}
+    obstaclesPer100Cells: 1
+    decorations:
+    - {fileID: 2750298860172458669, guid: 287bfcde8a8bba24c9623d7530787e30, type: 3}
+    - {fileID: 7336298474659753992, guid: 2606a29ac8a934b4cabf49548bd0b4c5, type: 3}
+    decorationChance: 0.12
+    waterRocks:
+    - frames:
+      - {fileID: -6591760578097145755, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: 9101035669822395816, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: 3234294262057147555, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: -5566335258800779854, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: -7628692014010301821, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: -3089720072195947750, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: 6910502441185169791, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+      - {fileID: -4884028467403954897, guid: 3e3a9611450e7484e997db544b717530, type: 3}
+    - frames:
+      - {fileID: 6972315418413338663, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: -8661709897740801471, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: 8824554328431356043, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: -6695211258704145448, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: -1820314030940062042, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: 3976394749612131340, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: -5443729802455617797, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+      - {fileID: 8257728822493429651, guid: d18b0d9e3ab934b488c86ace9da1ffb0, type: 3}
+    - frames:
+      - {fileID: -1657236513483380344, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: 8558894220588607466, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: -4827892071770254761, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: -3604461481311086551, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: 6861511599589026595, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: -2417548612333543299, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: 2763439710183631591, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+      - {fileID: -550042046018977558, guid: 41cfa927a3e74364fa13a48dc000beff, type: 3}
+    - frames:
+      - {fileID: -1625884585012484814, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: 3303464186290649300, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: -7097198202087862344, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: 8185347640094293832, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: -8690840347793911461, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: 393194626552862583, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: 7062963900064476109, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+      - {fileID: -6309004450759894304, guid: 2a62a163e2dcc0c4cb7a762886f636ff, type: 3}
+    waterRocksPer100WaterCells: 2.5
+  - name: Pumpkin farm
+    groundTint: {r: 1, g: 0.95, b: 0.78, a: 1}
+    beachWidth: 1
+    treesPer100Cells: 0.4
+    obstacles:
+    - {fileID: 8389134475083476877, guid: 2e71177830ddb324f956d723ea0fac53, type: 3}
+    - {fileID: 2960402581040015946, guid: dfc72b7dfa0aec04a863e40469b9b23c, type: 3}
+    - {fileID: -247037112251525876, guid: 5fe38952ebf66ea409df104cf7533d3e, type: 3}
+    obstaclesPer100Cells: 0.8
+    decorations:
+    - {fileID: -1540426309290004842, guid: 32d5ca3583fd79a4fbc33b733f6524ab, type: 3}
+    - {fileID: -5099292496197868168, guid: 1e1602f96f44ab14688936b49d420626, type: 3}
+    - {fileID: -3164809056393425246, guid: 767f2bfc0ca2a6b4582514a372e215d1, type: 3}
+    decorationChance: 0.14
+    waterRocks: []
+    waterRocksPer100WaterCells: 0
+  - name: Bone fields
+    groundTint: {r: 0.95, g: 0.82, b: 0.62, a: 1}
+    beachWidth: 2
+    treesPer100Cells: 0.25
+    obstacles:
+    - {fileID: 7680820834086852892, guid: 216228ae12a96714bab199138cfc6379, type: 3}
+    - {fileID: 6660783624410144326, guid: c7fac3eaf0ccb1a429b8f6472fb2235b, type: 3}
+    - {fileID: 141893073332109768, guid: b4ec92f7332fef84fa7cc0df24bace4b, type: 3}
+    obstaclesPer100Cells: 0.6
+    decorations:
+    - {fileID: -6270953770400647376, guid: 478b03b8645c83c468d5e629b64989c6, type: 3}
+    - {fileID: 4349915267927364619, guid: 0902d28f4cd4e7f498cefa1c9b6829e7, type: 3}
+    - {fileID: 2750298860172458669, guid: 287bfcde8a8bba24c9623d7530787e30, type: 3}
+    decorationChance: 0.15
+    waterRocks: []
+    waterRocksPer100WaterCells: 0
   player: {fileID: 2057771658}
   water: {fileID: 1772702328}
   cameraConfiner: {fileID: 859454204}
   enemySpawnArea: {fileID: 1536059155}
-  baseSize: {x: 40, y: 26}
-  sizeGrowthPerMap: {x: 6, y: 4}
-  maxSize: {x: 70, y: 46}
+  baseSize: {x: 28, y: 18}
+  sizeGrowthPerMap: {x: 4, y: 2}
+  maxSize: {x: 48, y: 28}
   waterMargin: 3
   landFillPercent: 0.72
   smoothingIterations: 5
   minLakeSize: 12
-  minIslandSize: 300
-  treesPer100Cells: 1.2
-  extraTreesPer100CellsPerMap: 0.3
-  minTreeSpacing: 3
-  playerClearRadius: 5
-  decorationChance: 0.05
+  minIslandFraction: 0.4
+  minObstacleSpacing: 3
+  playerClearRadius: 3
   useFixedSeed: 0
   fixedSeed: 12345
   levelsPerMap: 3

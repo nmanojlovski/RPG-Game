@@ -12,7 +12,7 @@ public class ExpManager : MonoBehaviour
     private int xPToLevel = 10;
     private float xPMultiplier = 1.2f;
 
-    [SerializeField] private int firstLevelSceneIndex = 5;
+    [SerializeField] private string proceduralLevelScene = "ProceduralLevel";
 
     private int flag = 0;
 
@@ -81,14 +81,8 @@ public class ExpManager : MonoBehaviour
     {
         flag = 0;
 
-        int mapIndex = ((GameManager.Instance.level - 1) / 3) + +firstLevelSceneIndex;
-
-        if (mapIndex >= SceneManager.sceneCountInBuildSettings)
-        {
-            mapIndex = SceneManager.sceneCountInBuildSettings - 1;
-        }
-
-        SceneManager.LoadScene(mapIndex);
+        // Reloading the procedural scene generates a fresh, bigger map for the new level.
+        SceneManager.LoadScene(proceduralLevelScene);
     }
 }
 

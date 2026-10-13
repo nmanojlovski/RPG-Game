@@ -28,6 +28,9 @@ public class EnemySpawner : MonoBehaviour
 
     [SerializeField] private BoxCollider2D[] forbiddenAreas;
 
+    [Header("Procedural Maps")]
+    [SerializeField] private float minSpawnDistanceFromPlayer = 6f;
+
     void Start()
     {
         StartCoroutine(spawnEnemy());
@@ -54,7 +57,9 @@ public class EnemySpawner : MonoBehaviour
                 continue;
             }
 
-            Vector2 spawnPos = GetRandomPointInBounds();
+            Vector2 spawnPos = ProceduralMapGenerator.Instance != null
+                ? ProceduralMapGenerator.Instance.GetRandomSpawnPoint(minSpawnDistanceFromPlayer)
+                : GetRandomPointInBounds();
             GameObject enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
             EnemyPopulationTracker.Register(enemy);
         }

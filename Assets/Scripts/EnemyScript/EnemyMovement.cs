@@ -151,7 +151,15 @@ public class EnemyMovement : MonoBehaviour
 
     void PickNewPatrolPoint()
     {
-        currentPatrolTarget = spawnPoint + Random.insideUnitCircle * patrolRadius;
+        for (int i = 0; i < 10; i++)
+        {
+            currentPatrolTarget = spawnPoint + Random.insideUnitCircle * patrolRadius;
+
+            if (ProceduralMapGenerator.Instance == null || ProceduralMapGenerator.Instance.IsWalkable(currentPatrolTarget))
+            {
+                return;
+            }
+        }
     }
 
     void Flee()

@@ -1,57 +1,68 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// A tile built at runtime from loose sprites (deco, rocks) so they line up with the 64px tile grid,
-// regardless of the sprites' own import scale and pivot. More than one frame makes it animate.
+// A tile made in code from a normal sprite (decorations, rocks).
+// The deco sprites are imported at 100 pixels per unit but the map tiles use 64, so the sprite
+// is scaled up to match and moved so it stands on the bottom of its cell.
+// If it gets more than one sprite, it plays them as an animation (the rocks in the water).
 public class PropTile : TileBase
 {
-    private const float ArtPixelsPerCell = 64f;
+    // The map's tiles are 64 pixels per cell.
+    private const float PixelsPerCell = 64f;
     private const float FramesPerSecond = 6f;
 
-    private Sprite[] frames;
-    private Matrix4x4 placement;
-
-    // Size of the sprite on the map, in cells.
-    public Vector2 WorldSize { get; private set; }
-
-    // Where the sprite's bottom sits inside its cell (cell centre is 0, cell bottom is -0.5).
+    // Where the bottom of the sprite sits in its cell (the cell's centre is 0, its bottom edge is -0.5).
     public const float GroundLevel = -0.4f;
+
+    private Sprite[] frames;
+    private Vector3 offset;
+    private float scale;
+
+    // Size of the sprite on the map, measured in cells.
+    public Vector2 WorldSize { get; private set; }
 
     public static PropTile Create(Sprite[] frames)
     {
-        var tile = CreateInstance<PropTile>();
+        PropTile tile = CreateInstance<PropTile>();
         tile.frames = frames;
 
-        Sprite first = frames[0];
-        float scale = first.pixelsPerUnit / ArtPixelsPerCell;
-        Bounds bounds = first.bounds;
+        Sprite sprite = frames[0];
+        tile.scale = sprite.pixelsPerUnit / PixelsPerCell;
+        tile.WorldSize = sprite.bounds.size * tile.scale;
 
-        tile.WorldSize = bounds.size * scale;
-        tile.placement = Matrix4x4.TRS(
-            new Vector3(-bounds.center.x * scale, GroundLevel - bounds.min.y * scale, 0f),
-            Quaternion.identity,
-            Vector3.one * scale);
+        // Centre the sprite left-right, and move it up or down so its bottom is on the ground line.
+        float moveX = -sprite.bounds.center.x * tile.scale;
+        float moveY = GroundLevel - sprite.bounds.min.y * tile.scale;
+        tile.offset = new Vector3(moveX, moveY, 0f);
 
         return tile;
     }
 
+    // Unity calls this to ask what to draw in a cell.
     public override void GetTileData(Vector3Int position, ITilemap tilemap, ref TileData tileData)
     {
         tileData.sprite = frames[0];
-        tileData.transform = placement;
         tileData.color = Color.white;
-        tileData.flags = TileFlags.LockTransform | TileFlags.LockColor;
         tileData.colliderType = Tile.ColliderType.None;
+
+        // The transform moves and scales the sprite inside its cell.
+        tileData.transform = Matrix4x4.TRS(offset, Quaternion.identity, Vector3.one * scale);
+
+        // Lock the transform and colour so nothing else on the tilemap changes them.
+        tileData.flags = TileFlags.LockTransform | TileFlags.LockColor;
     }
 
+    // Unity calls this to ask whether the cell is animated.
     public override bool GetTileAnimationData(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData)
     {
         if (frames.Length < 2) return false;
 
         tileAnimationData.animatedSprites = frames;
         tileAnimationData.animationSpeed = FramesPerSecond;
-        // Offset each rock so they don't all bob in sync.
-        tileAnimationData.animationStartTime = Mathf.Abs(position.x * 7 + position.y * 13) % frames.Length / FramesPerSecond;
+
+        // Start each rock on a different frame so they don't all move at the same time.
+        int startFrame = Mathf.Abs(position.x * 7 + position.y * 13) % frames.Length;
+        tileAnimationData.animationStartTime = startFrame / FramesPerSecond;
         return true;
     }
 }

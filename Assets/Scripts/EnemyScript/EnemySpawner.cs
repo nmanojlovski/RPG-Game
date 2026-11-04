@@ -65,9 +65,16 @@ public class EnemySpawner : MonoBehaviour
                 continue;
             }
 
-            Vector2 spawnPos = ProceduralMapGenerator.Instance != null
-                ? ProceduralMapGenerator.Instance.GetRandomSpawnPoint(minSpawnDistanceFromPlayer, maxSpawnDistanceFromPlayer)
-                : GetRandomPointInBounds();
+            // On a generated map, ask the generator for a spot on land near the player.
+            Vector2 spawnPos;
+            if (ProceduralMapGenerator.Instance != null)
+            {
+                spawnPos = ProceduralMapGenerator.Instance.GetRandomSpawnPoint(minSpawnDistanceFromPlayer, maxSpawnDistanceFromPlayer);
+            }
+            else
+            {
+                spawnPos = GetRandomPointInBounds();
+            }
             GameObject enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
             EnemyPopulationTracker.Register(enemy);
         }

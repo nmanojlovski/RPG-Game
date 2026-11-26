@@ -7,9 +7,7 @@ using UnityEngine.SceneManagement;
 public class ExpManager : MonoBehaviour
 {
 
-    
-    private int xP = 0;
-    private int xPToLevel = 10;
+
     private float xPMultiplier = 1.2f;
 
     [SerializeField] private string proceduralLevelScene = "ProceduralLevel";
@@ -39,8 +37,9 @@ public class ExpManager : MonoBehaviour
 
     public void GainXP(int amount)
     {
-        xP += amount;
-        if(xP >= xPToLevel)
+        GameManager gm = GameManager.Instance;
+        gm.xp += amount;
+        if(gm.xp >= gm.xpToLevel)
         {
             LevelUp();
         }
@@ -49,31 +48,31 @@ public class ExpManager : MonoBehaviour
 
     private void LevelUp()
     {
-        GameManager.Instance.UpdateLevel(1);
+        GameManager gm = GameManager.Instance;
+        gm.UpdateLevel(1);
 
-        xP -= xPToLevel;
-        xPToLevel = Mathf.RoundToInt(xPMultiplier + xPToLevel);
+        gm.xp -= gm.xpToLevel;
+        gm.xpToLevel = Mathf.RoundToInt(xPMultiplier + gm.xpToLevel);
 
         OnLevelUp?.Invoke(1);
 
-        if (GameManager.Instance.level < 18)
-        {
-            if (GameManager.Instance.level % 3 == 0)
-            {
-                LoadNextScene();
-            }
-        }
-
-        if(GameManager.Instance.level == 20)
+        if (GameManager.Instance.level >= 20)
         {
             SceneManager.LoadScene("EndScene");
+            return;
+        }
+
+        ProceduralMapGenerator generator = ProceduralMapGenerator.Instance;
+        if (generator != null && generator.MapForLevel(GameManager.Instance.level) != generator.MapNumber)
+        {
+            LoadNextScene();
         }
     }
 
     private void UpdateUI()
     {
-        slider.maxValue = xPToLevel;
-        slider.value = xP;
+        slider.maxValue = GameManager.Instance.xpToLevel;
+        slider.value = GameManager.Instance.xp;
         levelText.text = "Level: " + GameManager.Instance.level;
     }
 

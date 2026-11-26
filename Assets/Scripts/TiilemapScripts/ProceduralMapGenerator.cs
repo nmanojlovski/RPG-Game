@@ -147,7 +147,7 @@ public class ProceduralMapGenerator : MonoBehaviour
         {
             level = GameManager.Instance.level;
         }
-        int mapNumber = level / levelsPerMap + 1;
+        int mapNumber = MapForLevel(level);
 
         // The seed comes from the computer's clock, so every map is different.
         int seed = System.Environment.TickCount;
@@ -162,6 +162,12 @@ public class ProceduralMapGenerator : MonoBehaviour
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
+    }
+
+    // Levels 1-3 are map 1, levels 4-6 are map 2, and so on.
+    public int MapForLevel(int level)
+    {
+        return (Mathf.Max(1, level) - 1) / levelsPerMap + 1;
     }
 
     public void Generate(int mapNumber, int seed)

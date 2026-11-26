@@ -8,6 +8,10 @@ public class GameManager : MonoBehaviour
     public int level = 1;
     public int availablePoints = 5;
 
+    // Kept here so XP and the next-level threshold survive the scene reload on every new map.
+    public int xp = 0;
+    public int xpToLevel = 10;
+
     // ?? NEW: store skill levels
     public Dictionary<string, int> skillLevels = new Dictionary<string, int>();
 
